@@ -55,7 +55,6 @@ services:
   - type: web
     name: academy-portal-frontend
     runtime: node
-    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
     repo: https://github.com/Tarshann/Academy
     buildCommand: npm ci && npm run build
     startCommand: npm start
@@ -82,7 +81,6 @@ services:
   - type: web
     name: academy-portal-api
     runtime: node
-    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
     repo: https://github.com/Tarshann/Academy
     buildCommand: npm ci
     startCommand: npm run start
@@ -112,7 +110,6 @@ services:
   - type: web
     name: academy-portal-socket
     runtime: node
-    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
     repo: https://github.com/Tarshann/Academy
     buildCommand: npm ci
     startCommand: npm run start:socket
@@ -141,7 +138,6 @@ services:
   - type: cron
     name: academy-portal-maintenance
     runtime: node
-    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
     repo: https://github.com/Tarshann/Academy
     buildCommand: npm ci
     startCommand: node maintenance.js
