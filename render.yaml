@@ -4,11 +4,6 @@
 # the Academy Communication Portal on Render's platform.
 ##############################################################
 
-# Enable preview environments for testing
-previews:
-  generation: automatic
-  expireAfterDays: 7
-
 # Define environment variable groups for reuse across services
 envVarGroups:
   - name: common-settings
