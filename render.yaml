@@ -1,0 +1,155 @@
+##############################################################
+# Render Blueprint for The Academy Portal
+# This file defines the infrastructure for deploying and managing
+# the Academy Communication Portal on Render's platform.
+##############################################################
+
+# Enable preview environments for testing
+previews:
+  generation: automatic
+  expireAfterDays: 7
+
+# Define environment variable groups for reuse across services
+envVarGroups:
+  - name: common-settings
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: APP_URL
+        value: https://portal.academytn.com
+      - key: NODE_VERSION
+        value: 18.17.1  # Explicitly set a supported Node.js version
+
+  - name: database-config
+    envVars:
+      - key: MONGODB_URI
+        sync: false # Prompt for value in Render Dashboard
+      - key: MONGODB_DB_NAME
+        value: academy_portal
+
+  - name: auth-settings
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true # Generate a secure random value
+      - key: JWT_EXPIRATION
+        value: 86400 # 24 hours in seconds
+      - key: COOKIE_SECRET
+        generateValue: true
+
+  - name: external-services
+    envVars:
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_BUCKET
+        value: academy-portal-media
+      - key: SENDGRID_API_KEY
+        sync: false
+
+# Define services
+services:
+  # Frontend web application
+  - type: web
+    name: academy-portal-frontend
+    runtime: node
+    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
+    repo: https://github.com/Tarshann/Academy
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    plan: standard # Can be adjusted based on traffic needs
+    numInstances: 1
+    healthCheckPath: /
+    domains:
+      - portal.academytn.com
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: REACT_APP_API_URL
+        value: https://api.portal.academytn.com
+      - key: REACT_APP_SOCKET_URL
+        value: https://socket.portal.academytn.com
+      - fromGroup: common-settings
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 70
+      targetCPUPercent: 70
+
+  # Backend API service
+  - type: web
+    name: academy-portal-api
+    runtime: node
+    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
+    repo: https://github.com/Tarshann/Academy
+    buildCommand: npm ci
+    startCommand: npm run start
+    plan: standard
+    numInstances: 1
+    healthCheckPath: /api/health
+    domains:
+      - api.portal.academytn.com
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: CORS_ORIGIN
+        value: https://portal.academytn.com
+      - key: SOCKET_URL
+        value: https://socket.portal.academytn.com
+      - fromGroup: common-settings
+      - fromGroup: database-config
+      - fromGroup: auth-settings
+      - fromGroup: external-services
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 70
+      targetCPUPercent: 70
+
+  # Socket.IO service for real-time communication
+  - type: web
+    name: academy-portal-socket
+    runtime: node
+    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
+    repo: https://github.com/Tarshann/Academy
+    buildCommand: npm ci
+    startCommand: npm run start:socket
+    plan: standard
+    numInstances: 2 # Multiple instances for reliability
+    healthCheckPath: /socket/health
+    domains:
+      - socket.portal.academytn.com
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: CORS_ORIGIN
+        value: https://portal.academytn.com
+      - key: API_URL
+        value: https://api.portal.academytn.com
+      - fromGroup: common-settings
+      - fromGroup: database-config
+      - fromGroup: auth-settings
+    scaling:
+      minInstances: 2
+      maxInstances: 4
+      targetMemoryPercent: 70
+      targetCPUPercent: 70
+
+  # Scheduled job for database backups and maintenance
+  - type: cron
+    name: academy-portal-maintenance
+    runtime: node
+    nodeVersion: 18.17.1  # Explicitly specify a supported Node.js version
+    repo: https://github.com/Tarshann/Academy
+    buildCommand: npm ci
+    startCommand: node maintenance.js
+    schedule: "0 0 * * *" # Run daily at midnight
+    envVars:
+      - fromGroup: common-settings
+      - fromGroup: database-config
+      - fromGroup: external-services
+
+# Note: MongoDB is not defined here as it will be provided by MongoDB Atlas
+# Connection details will be supplied via environment variables
