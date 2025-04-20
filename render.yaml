@@ -59,7 +59,6 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm start
     plan: standard # Can be adjusted based on traffic needs
-    numInstances: 1
     healthCheckPath: /
     domains:
       - portal.academytn.com
@@ -85,7 +84,6 @@ services:
     buildCommand: npm ci
     startCommand: npm run start
     plan: standard
-    numInstances: 1
     healthCheckPath: /api/health
     domains:
       - api.portal.academytn.com
@@ -114,7 +112,6 @@ services:
     buildCommand: npm ci
     startCommand: npm run start:socket
     plan: standard
-    numInstances: 2 # Multiple instances for reliability
     healthCheckPath: /socket/health
     domains:
       - socket.portal.academytn.com
